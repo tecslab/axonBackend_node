@@ -36,7 +36,7 @@ var client = new ftpClient(ftpConfig,{});
 const sendFile = async () => {
   try {
     await client.connect(()=>{
-      client.upload(["./visitorsData.csv"], '/public_html/test', {
+      client.upload(["./visitorsData.csv"], '/public_html/test/visitorsData.csv', {
         baseDir: 'test',
         overwrite: 'all'
       }, (result:any)=> {
@@ -49,10 +49,9 @@ const sendFile = async () => {
   }
 }
 
-
 client.connect(()=>{
   console.log("download");
-  client.download('/public_html/test', './', {
+  client.download('/public_html/test/visitorsData.csv', './test', {
     overwrite: 'all'
   }, function (result: any) {
     console.log(result);
@@ -70,7 +69,7 @@ async function streamToBuffer(stream) {
 
 
 // Schedule the task to run every day at 23:00
-cron.schedule("0 23 * * *", async () => {
+cron.schedule("08 00 * * *", async () => {
   console.log("Fetching data at 23:00...");
   const now = new Date();
   const intervalDate = getIntervalDate(now)
