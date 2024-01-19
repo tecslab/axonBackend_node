@@ -26,6 +26,10 @@ const ftpConfig = {
   password: ftpPsw
 }
 
+const options =  {
+  logging: 'debug'
+}
+
 var client = new ftpClient(ftpConfig,{});
 
 
@@ -45,6 +49,15 @@ const sendFile = async () => {
   }
 }
 
+
+client.connect(()=>{
+  console.log("download");
+  client.download('/public_html/test', './', {
+    overwrite: 'all'
+  }, function (result: any) {
+    console.log(result);
+  });
+})
 
 /* // Helper function to convert ReadableStream to ArrayBuffer
 async function streamToBuffer(stream) {

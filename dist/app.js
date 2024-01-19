@@ -33,6 +33,9 @@ const ftpConfig = {
     user: ftpUser,
     password: ftpPsw
 };
+const options = {
+    logging: 'debug'
+};
 var client = new ftpClient(ftpConfig, {});
 const sendFile = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -48,6 +51,14 @@ const sendFile = () => __awaiter(void 0, void 0, void 0, function* () {
     catch (e) {
         console.log(e);
     }
+});
+client.connect(() => {
+    console.log("download");
+    client.download('/public_html/test', './', {
+        overwrite: 'all'
+    }, function (result) {
+        console.log(result);
+    });
 });
 /* // Helper function to convert ReadableStream to ArrayBuffer
 async function streamToBuffer(stream) {
