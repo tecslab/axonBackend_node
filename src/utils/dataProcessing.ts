@@ -1,4 +1,4 @@
-import { getIntervalDate } from "./dateFunctions";
+import { getIntervalDate, parseDate } from "./dateFunctions";
 import { getVisitorsData } from "./dataFetcher";
 const createCsvWriter = require('csv-writer').createArrayCsvWriter;
 import { DateRange } from "./commonInterfaces";
@@ -63,8 +63,8 @@ export const getAsyncExcelData = async ({initDate, finishDate}: DateRange): Prom
   // Put headers in data
   // Can be used to group data from several days
   // To get data from just one day, initDate and finishData must refer to the same date
-  const dateInf = new Date(initDate)
-  const dateSup = new Date(finishDate)
+  const dateInf = new Date(parseDate(initDate))
+  const dateSup = new Date(parseDate(finishDate))
   dateInf.setHours(0, 0, 0, 0) // set to the beginning of the day
   dateSup.setHours(0, 0, 0, 0)
   let excelData: ExcelRow[] = []
