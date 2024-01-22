@@ -36,12 +36,12 @@ const ftpConfig = {
 const options = {
     logging: 'debug'
 };
-var client = new ftpClient(ftpConfig, {});
+var client = new ftpClient(ftpConfig, options);
 const sendFile = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield client.connect(() => {
-            client.upload(["./visitorsData.csv"], '/public_html/test/visitorsData.csv', {
-                baseDir: 'test',
+            client.upload(["./visitorsData.csv"], '/public_html/uploads', {
+                baseDir: 'uploads',
                 overwrite: 'all'
             }, (result) => {
                 console.log(result);
@@ -52,14 +52,20 @@ const sendFile = () => __awaiter(void 0, void 0, void 0, function* () {
         console.log(e);
     }
 });
-client.connect(() => {
-    console.log("download");
-    client.download('/public_html/test/visitorsData.csv', './test', {
-        overwrite: 'all'
-    }, function (result) {
-        console.log(result);
+try {
+    client.connect(() => {
+        console.log("download");
+        client.download('/**', './downloads', {
+            overwrite: 'none'
+        }, function (result) {
+            console.log(result);
+        });
     });
-});
+}
+catch (e) {
+    console.log("Error de descarga");
+    console.log(e);
+}
 /* // Helper function to convert ReadableStream to ArrayBuffer
 async function streamToBuffer(stream) {
   const chunks = [];
@@ -69,7 +75,7 @@ async function streamToBuffer(stream) {
   return new Uint8Array(Buffer.concat(chunks)).buffer;
 } */
 // Schedule the task to run every day at 23:00
-cron.schedule("08 00 * * *", () => __awaiter(void 0, void 0, void 0, function* () {
+cron.schedule("00 23 * * *", () => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Fetching data at 23:00...");
     const now = new Date();
     const intervalDate = (0, dateFunctions_1.getIntervalDate)(now);
