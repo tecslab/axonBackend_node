@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from "express";
 import { getIntervalDate } from "./utils/dateFunctions";
 import { getAsyncExcelData, writeCSVFile } from "./utils/dataProcessing";
 import { globalParameters } from "./utils/globalParameters";
+const db = require('./queries')
 const { ftpAddress, ftpUser, ftpPsw } = globalParameters
 
 var ftpClient = require('ftp-client')
@@ -14,9 +15,14 @@ app.get("/", (_req: Request, res: Response): void => {
   res.send("Backend Axxon!");
 });
 
+app.get('/events', db.getAllEvents);
+app.get('/event/:id', db.getEventById);
+app.post('/eventsRange', db.getEventsByDateRange);
+
 app.listen(port, () => {
   console.log(`Listening on ${ port } ...`);
 });
+
 
 
 const ftpConfig = {
@@ -27,7 +33,6 @@ const ftpConfig = {
 }
 
 var client = new ftpClient(ftpConfig,{});
-
 
 const sendFile = async () => {
   try {
