@@ -2,7 +2,8 @@ import express, { Express, Request, Response } from "express";
 import { getIntervalDate } from "./utils/dateFunctions";
 import { getAsyncExcelData, writeCSVFile } from "./utils/dataProcessing";
 import { globalParameters } from "./utils/globalParameters";
-const db = require('./queries')
+// const db = require('./queries')
+import { getAllEvents, getEventById, getEventsByDateRange } from './queries';
 const { ftpAddress, ftpUser, ftpPsw } = globalParameters
 
 var ftpClient = require('ftp-client')
@@ -15,14 +16,13 @@ app.get("/", (_req: Request, res: Response): void => {
   res.send("Backend Axxon!");
 });
 
-app.get('/events', db.getAllEvents);
-app.get('/event/:id', db.getEventById);
-app.post('/eventsRange', db.getEventsByDateRange);
+app.get('/events', getAllEvents);
+app.get('/event/:id', getEventById);
+app.post('/eventsRange', getEventsByDateRange);
 
 app.listen(port, () => {
   console.log(`Listening on ${ port } ...`);
 });
-
 
 
 const ftpConfig = {
@@ -36,7 +36,11 @@ const options =  {
   logging: 'debug'
 }
 
-var client = new ftpClient(ftpConfig, options);
+try {
+  var client = new ftpClient(ftpConfig, options);
+}catch(error){
+  console.log('No se alcanza al servidor FTP')
+}
 
 const sendFile = async () => {
   try {

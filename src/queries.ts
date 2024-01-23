@@ -1,3 +1,4 @@
+import { Request, Response } from 'express';
 const Pool = require('ngp').Pool
 
 const pool = new Pool({
@@ -8,8 +9,8 @@ const pool = new Pool({
   port: 20110,
 });
 
-const getAllEvents = (request, response) =>  {
-    pool.query('SELECT * FROM t_event', (error, results)=>{
+const getAllEvents = (request: Request, response: Response) =>  {
+    pool.query('SELECT * FROM t_event', (error: Error, results: any)=>{
         if (error){
             throw error
         }
@@ -17,9 +18,9 @@ const getAllEvents = (request, response) =>  {
     });
 }
 
-const getEventById = (request, response) => {
+const getEventById = (request: Request, response: Response) => {
     const id = parseInt(request.params.id)
-    pool.query('SELECT * FROM t_event WHERE id = $1', [id],(error, results)=>{
+    pool.query('SELECT * FROM t_event WHERE id = $1', [id],(error: Error, results: any)=>{
         if (error){
             throw error
         }
@@ -27,10 +28,10 @@ const getEventById = (request, response) => {
     });
 }
 
-const getEventsByDataRange = (request, response) =>{
+const getEventsByDateRange = (request: Request, response: Response) =>{
     const {startDate, finishDate} = request.body;
     // format yyyy-mm-dd
-    pool.query("SELECT * FROM t_event WHERE timestamp BETWEEN '$1' AND '$2'", [startDate, finishDate], (error, results) =>{
+    pool.query("SELECT * FROM t_event WHERE timestamp BETWEEN '$1' AND '$2'", [startDate, finishDate], (error: Error, results: any) =>{
         if (error){
             throw error
         }
@@ -38,8 +39,8 @@ const getEventsByDataRange = (request, response) =>{
     })
 }
 
-module.exports = {
+export {
     getAllEvents,
     getEventById,
-    getEventsByDataRange
+    getEventsByDateRange
 }
