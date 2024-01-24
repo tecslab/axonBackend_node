@@ -39,7 +39,7 @@ const ftpConfig = {
     password: ftpPsw
 };
 const options = {
-    logging: 'debug'
+    logging: 'basic' //debug
 };
 try {
     var client = new ftpClient(ftpConfig, options);

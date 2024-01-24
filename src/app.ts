@@ -33,7 +33,7 @@ const ftpConfig = {
 }
 
 const options =  {
-  logging: 'debug'
+  logging: 'basic' //debug
 }
 
 try {
