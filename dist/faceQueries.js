@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getEventsByDateRange = exports.getEventById = exports.getAllEvents = void 0;
+exports.getEventsByDateRange = exports.getEventByTimeStamp = exports.getAllEvents = void 0;
 const ts_postgres_1 = require("ts-postgres");
 const client = new ts_postgres_1.Client({
     user: 'ngp',
@@ -23,7 +23,7 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 connectDB();
 const getAllEvents = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield client.query('SELECT * FROM t_event');
+    const result = yield client.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared'");
     response.status(200).json(result);
 });
 exports.getAllEvents = getAllEvents;
@@ -36,13 +36,17 @@ exports.getAllEvents = getAllEvents;
         else response.status(200).json(results.row)
     });
 } */
-const getEventById = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    const id = parseInt(request.params.id, 10);
+const getEventByTimeStamp = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    const timeStamp = new Date(parseInt(request.params.id, 10));
+    const dateString = timeStamp.toISOString().replace("T", " ").replace("Z", "");
     // no existe id, se debe implementar por timestamp
-    const result = yield client.query("SELECT * FROM t_event WHERE timestamp='2024-01-12 17:04:13.133'");
-    response.status(200).json(result);
+    console.log("probando");
+    console.log(dateString);
+    const result = yield client.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp='" + dateString + "'");
+    console.log(result);
+    response.status(200).json(result.rows[0][3]);
 });
-exports.getEventById = getEventById;
+exports.getEventByTimeStamp = getEventByTimeStamp;
 const getEventsByDateRange = (request, response) => {
     const { startDate, finishDate } = request.body;
     // format yyyy-mm-dd

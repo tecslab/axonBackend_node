@@ -17,7 +17,7 @@ const dateFunctions_1 = require("./utils/dateFunctions");
 const dataProcessing_1 = require("./utils/dataProcessing");
 const globalParameters_1 = require("./utils/globalParameters");
 // const db = require('./queries')
-const queries_1 = require("./queries");
+const faceQueries_1 = require("./faceQueries");
 const { ftpAddress, ftpUser, ftpPsw } = globalParameters_1.globalParameters;
 var ftpClient = require('ftp-client');
 var cron = require('node-cron');
@@ -26,9 +26,9 @@ const port = Number(process.env.PORT) || 3000;
 app.get("/", (_req, res) => {
     res.send("Backend Axxon!");
 });
-app.get('/events', queries_1.getAllEvents);
-app.get('/event/:id', queries_1.getEventById);
-app.post('/eventsRange', queries_1.getEventsByDateRange);
+app.get('/events', faceQueries_1.getAllEvents);
+app.get('/event/:id', faceQueries_1.getEventByTimeStamp);
+app.post('/eventsRange', faceQueries_1.getEventsByDateRange);
 app.listen(port, () => {
     console.log(`Listening on ${port} ...`);
 });

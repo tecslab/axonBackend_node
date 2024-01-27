@@ -3,7 +3,7 @@ import { getIntervalDate } from "./utils/dateFunctions";
 import { getAsyncExcelData, writeCSVFile } from "./utils/dataProcessing";
 import { globalParameters } from "./utils/globalParameters";
 // const db = require('./queries')
-import { getAllEvents, getEventById, getEventsByDateRange } from './queries';
+import { getAllEvents, getEventByTimeStamp, getEventsByDateRange } from './faceQueries';
 const { ftpAddress, ftpUser, ftpPsw } = globalParameters
 
 var ftpClient = require('ftp-client')
@@ -17,7 +17,7 @@ app.get("/", (_req: Request, res: Response): void => {
 });
 
 app.get('/events', getAllEvents);
-app.get('/event/:id', getEventById);
+app.get('/event/:id', getEventByTimeStamp);
 app.post('/eventsRange', getEventsByDateRange);
 
 app.listen(port, () => {
