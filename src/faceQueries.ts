@@ -16,7 +16,6 @@ const connectDB = async() =>{
 
 connectDB();
 
-
 const getAllEvents = async(request: Request, response: Response) =>  {
     const result = await client.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared'");
     response.status(200).json(result);
