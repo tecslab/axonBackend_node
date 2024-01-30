@@ -67,9 +67,10 @@ export const getAsyncExcelData = async ({initDate, finishDate}: DateRange): Prom
   const dateSup = new Date(parseDate(finishDate))
   dateInf.setHours(0, 0, 0, 0) // set to the beginning of the day
   dateSup.setHours(0, 0, 0, 0)
+  
   let excelData: ExcelRow[] = []
 
-  while (dateInf <= dateSup) {
+  while (dateInf < dateSup) { // colocar <= si se quiere incluir el dìa superior
     const intervalDate = getIntervalDate(dateInf)
     const { initDate, finishDate } = intervalDate
     

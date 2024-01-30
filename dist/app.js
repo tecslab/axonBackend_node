@@ -39,7 +39,7 @@ const ftpConfig = {
     password: ftpPsw
 };
 const client = new ftp.Client();
-client.ftp.verbose = true; // For debug
+//client.ftp.verbose = true; // For debug
 const sendFile = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!client.accessed) {
@@ -80,3 +80,7 @@ cron.schedule("00 23 * * *", () => __awaiter(void 0, void 0, void 0, function* (
         .then(() => closeFTPConnection())
         .catch((err) => console.log(err));
 }));
+//createVisitorsFile()
+/* sendFile()
+  .then(() => closeFTPConnection())
+  .catch((err) => console.log(err)); */ 

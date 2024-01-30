@@ -38,7 +38,7 @@ const ftpConfig : FtpConfig = {
 }
 
 const client = new ftp.Client();
-client.ftp.verbose = true; // For debug
+//client.ftp.verbose = true; // For debug
 
 const sendFile = async () => {
   try {
@@ -84,3 +84,9 @@ cron.schedule("00 23 * * *", async () => {
     .then(() => closeFTPConnection())
     .catch((err) => console.log(err));
 });
+
+//createVisitorsFile()
+
+/* sendFile()
+  .then(() => closeFTPConnection())
+  .catch((err) => console.log(err)); */

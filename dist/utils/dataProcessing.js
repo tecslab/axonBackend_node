@@ -71,7 +71,7 @@ const getAsyncExcelData = ({ initDate, finishDate }) => __awaiter(void 0, void 0
     dateInf.setHours(0, 0, 0, 0); // set to the beginning of the day
     dateSup.setHours(0, 0, 0, 0);
     let excelData = [];
-    while (dateInf <= dateSup) {
+    while (dateInf < dateSup) { // colocar <= si se quiere incluir el dìa superior
         const intervalDate = (0, dateFunctions_1.getIntervalDate)(dateInf);
         const { initDate, finishDate } = intervalDate;
         const result = yield (0, dataFetcher_1.getVisitorsData)({ initDate, finishDate });
