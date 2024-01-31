@@ -1,30 +1,18 @@
 import { Client } from 'ts-postgres';
 import { Request, Response } from 'express';
-import globalParameters from './utils/globalParameters';
+import {globalParameters} from './utils/globalParameters';
 const { timeIntervals } = globalParameters;
-
-const client = new Client({
-    user: 'ngp',
-    host: 'localhost', // problem here
-    database: 'ngp',
-    password: 'ngp',
-    port: 20110,
-  });
+import * as pgDB from './db/postgres'
 
 
-const connectDB = async() =>{
-    await client.connect();
-}
-
-connectDB();
 
 // On the DB table, timestamp is in the format "yyyy-mm-dd HH:MM:SS.ms" which is very similar to date.toISOString();
 const getAllEvents = async(request: Request, response: Response) =>  {
     try {
-        const result = await client.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared'");
+        const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = '$1'", ["faceAppeared"]);
         response.status(200).json(result.rows[0]);
-    }catch(error)=>{
-       console.log("No se pudo recuperar los eventos: " + result)
+    }catch(error){
+       console.log("No se pudo recuperar los eventos: " + error)
     }
 }
 
@@ -34,16 +22,16 @@ const getEventByTimeStamp = async (request: Request, response: Response) => {
     const dateString = timeStamp.toISOString().replace("T", " ").replace("Z", "")
     // no existe id, se debe implementar por timestamp
     try {
-        const result = await client.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp='" + dateString + "'");
+        const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp='$1'", [dateString]);
         response.status(200).json(result.rows[0][3]);
-    }catch(error)=>{
-        console.log("No se pudo recuperar el evento(faceAppeared): " + result);
+    }catch(error){
+        console.log("No se pudo recuperar el evento(faceAppeared): " + error);
     }
 
 };
 
 
-const getEventsByDateRange = (request: Request, response: Response) => {
+const getEventsByDateRange = async(request: Request, response: Response) => {
     const startTimeStamp: Date = new Date(parseInt(request.params.startTimeStamp, 10));
     const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
 
@@ -52,11 +40,11 @@ const getEventsByDateRange = (request: Request, response: Response) => {
     console.log('fetching range data');
     console.log(startDateString + " to " + finishDateString);
     try {
-        const result = await client.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString +"' AND '" + finishDateString +"'");
+        const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
         console.log(result)
         response.status(200).json(result.rows[0]);       
-    }catch(error)=>{
-        console.log("No se pudo recuperar el evento(faceAppeared): " + result);
+    }catch(error){
+        console.log("No se pudo recuperar el evento(faceAppeared): " + error);
     }
 }
 
@@ -75,7 +63,7 @@ interface FaceEventResult{
     }
 }
 
-const processFaceData = (JSONEvents: Array) =>{
+const processFaceData = (JSONEvents: []) =>{
 
     /* for (let i=0; i>=timeIntervals.length; i++) {
         let intervalInit : String = timeIntervals[i];
@@ -99,9 +87,9 @@ const processFaceData = (JSONEvents: Array) =>{
         {start: 60, finish: 200, count:0}
     ]
 
-    JSONEvents.forEach(faceEvent: FaceEvent => {
-        let time: Date = new Date(faceEvent[2]); // verificar
-        let event = faceEvent[3].body;  // Verify it this needs T and Z
+    JSONEvents.forEach( (faceEvent : FaceEvent) => {
+        let time: Date = new Date(faceEvent.body[2]); // verificar
+        let event = faceEvent.body;  // Verify it this needs T and Z
         let faceEventResult : FaceEventResult = event.details.faceRecognitionResult;
         
         

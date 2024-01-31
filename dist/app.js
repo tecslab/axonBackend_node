@@ -30,8 +30,8 @@ app.get("/", (_req, res) => {
     res.send("Backend Axxon!");
 });
 app.get('/events', faceQueries_1.getAllEvents);
-app.get('/event/:id', faceQueries_1.getEventByTimeStamp);
-app.post('/eventsRange', faceQueries_1.getEventsByDateRange);
+app.get('/event/:timestamp', faceQueries_1.getEventByTimeStamp);
+app.post('/eventsRange/startTimeStamp/finishTimeStamp', faceQueries_1.getEventsByDateRange);
 const ftpConfig = {
     host: ftpAddress,
     port: 21,

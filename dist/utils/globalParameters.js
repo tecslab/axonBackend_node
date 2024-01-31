@@ -13,6 +13,7 @@ const globalParameters = {
     vEntranceCamera: "/SVRCAMARAS/DeviceIpint.2/SourceEndpoint.video:0:0/",
     ftpAddress: "box.colinealcorp.com",
     ftpUser: "contadorpersonas",
-    ftpPsw: "contador7377"
+    ftpPsw: "contador7377",
+    timeIntervals: ['09H00', '10H00', '11H00', '12H00', '13H00', '14H00', '15H00', '16H00', '17H00', '18H00', '19H00', '20H00', '21H00']
 };
 exports.globalParameters = globalParameters;
