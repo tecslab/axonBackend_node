@@ -17,8 +17,8 @@ app.get("/", (_req: Request, res: Response): void => {
 });
 
 app.get('/events', getAllEvents);
-app.get('/event/:id', getEventByTimeStamp);
-app.post('/eventsRange', getEventsByDateRange);
+app.get('/event/:timestamp', getEventByTimeStamp);
+app.post('/eventsRange/startTimeStamp/finishTimeStamp', getEventsByDateRange);
 
 app.listen(port, () => {
   console.log(`Listening on ${ port } ...`);
