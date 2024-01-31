@@ -2,15 +2,18 @@ import express, { Express, Request, Response } from "express";
 import { getIntervalDate } from "./utils/dateFunctions";
 import { getAsyncExcelData, writeCSVFile } from "./utils/dataProcessing";
 import { globalParameters } from "./utils/globalParameters";
+const { ftpAddress, ftpUser, ftpPsw } = globalParameters
 // const db = require('./queries')
 import { getAllEvents, getEventByTimeStamp, getEventsByDateRange } from './faceQueries';
-const { ftpAddress, ftpUser, ftpPsw } = globalParameters
-
-var ftpClient = require('ftp-client')
+const ftp = require("basic-ftp") 
 var cron = require('node-cron');
 
 const app : Express = express();
 const port : number = Number(process.env.PORT )|| 3000;
+
+app.listen(port, () => {
+  console.log(`Listening on ${ port } ...`);
+});
 
 app.get("/", (_req: Request, res: Response): void => {
   res.send("Backend Axxon!");
@@ -20,78 +23,70 @@ app.get('/events', getAllEvents);
 app.get('/event/:timestamp', getEventByTimeStamp);
 app.post('/eventsRange/startTimeStamp/finishTimeStamp', getEventsByDateRange);
 
-app.listen(port, () => {
-  console.log(`Listening on ${ port } ...`);
-});
+interface FtpConfig {
+  host: string,
+  port: number,
+  user: string,
+  password: string
+}
 
-
-const ftpConfig = {
+const ftpConfig : FtpConfig = {
   host: ftpAddress,
   port: 21,
   user: ftpUser,
   password: ftpPsw
 }
 
-const options =  {
-  logging: 'basic' //debug
-}
-
-try {
-  var client = new ftpClient(ftpConfig, options);
-}catch(error){
-  console.log('No se alcanza al servidor FTP')
-}
+const client = new ftp.Client();
+//client.ftp.verbose = true; // For debug
 
 const sendFile = async () => {
   try {
-    await client.connect(()=>{
-      client.upload(["./visitorsData.csv"], '/public_html/uploads', {
-        baseDir: 'uploads',
-        overwrite: 'all'
-      }, (result:any)=> {
-        console.log(result);
-      });
-    });
+    if (!client.accessed) {
+      // Connect to the server only if the client has not been accessed before
+      console.log("Conectando...");
+      await client.access(ftpConfig);
+    }
+
+    console.log(await client.list());
+    await client.uploadFrom("./visitorsData.csv", "./public_html/uploads/visitorsData.csv");
+    //await client.downloadTo(".downloads.csv", "./public_html/uploads/visitorsData.csv");
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const closeFTPConnection = async () => {
+  try {
+    await client.close();
+    console.log("Connection closed.");
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const createVisitorsFile = async () => {
+  const now = new Date();
+  //const now = new Date("2024-01-25 12:00:00")
+  const intervalDate = getIntervalDate(now)
+  const {initDate, finishDate} = intervalDate
   
-  }catch(e){
-    console.log(e)
-  }
+  const excelData = await getAsyncExcelData({initDate, finishDate});
+  const fileName = await writeCSVFile(excelData)
 }
-
-try {
-  client.connect(()=>{
-    console.log("download");
-    client.download('/**', './downloads', {
-      overwrite: 'none'
-    }, function (result: any) {
-      console.log(result);
-    });
-  })
-}catch(e){
-  console.log("Error de descarga")
-  console.log(e)
-}
-
-/* // Helper function to convert ReadableStream to ArrayBuffer
-async function streamToBuffer(stream) {
-  const chunks = [];
-  for await (const chunk of stream) {
-    chunks.push(chunk);
-  }
-  return new Uint8Array(Buffer.concat(chunks)).buffer;
-} */
-
 
 // Schedule the task to run every day at 23:00
 cron.schedule("00 23 * * *", async () => {
   console.log("Fetching data at 23:00...");
-  const now = new Date();
-  const intervalDate = getIntervalDate(now)
-  const {initDate, finishDate} = intervalDate
+  createVisitorsFile()
 
-
-  const excelData = await getAsyncExcelData({initDate, finishDate});
-  const fileName = await writeCSVFile(excelData)
   sendFile()
-
+    .then(() => closeFTPConnection())
+    .catch((err) => console.log(err));
 });
+
+//createVisitorsFile()
+
+/* sendFile()
+  .then(() => closeFTPConnection())
+  .catch((err) => console.log(err)); */
