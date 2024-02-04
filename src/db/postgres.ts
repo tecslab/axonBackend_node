@@ -1,18 +1,21 @@
-import { Client } from 'ts-postgres';
+import * as pgPromise from 'pg-promise';
+const pgp = require('pg-promise')();
 
-const client = new Client({
+const config = {
     user: 'ngp',
-    host: 'localhost', // problem here
+    host: 'localhost',
     database: 'ngp',
     password: 'ngp',
     port: 20110,
-  });
+};
+
+const db = pgp(config);
 
 
-const connectDB = async() =>{
-  await client.connect();
+export const query = async(text: string, params: Array<any>) : Promise<any>=> {
+  return db.query(text, params)
 }
 
-export const query = (text: string, params: Array<any>) => {
-  return client.query(text, params)
+export const plainQuery = async(text: string) : Promise<any> => {
+  return db.query(text)
 }
