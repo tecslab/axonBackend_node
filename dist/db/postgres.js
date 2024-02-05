@@ -9,19 +9,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.query = void 0;
-const ts_postgres_1 = require("ts-postgres");
-const client = new ts_postgres_1.Client({
+exports.plainQuery = exports.query = void 0;
+const pgp = require('pg-promise')();
+const config = {
     user: 'ngp',
-    host: 'localhost', // problem here
+    host: 'localhost',
     database: 'ngp',
     password: 'ngp',
     port: 20110,
-});
-const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
-    yield client.connect();
-});
-const query = (text, params) => {
-    return client.query(text, params);
 };
+const db = pgp(config);
+const query = (text, params) => __awaiter(void 0, void 0, void 0, function* () {
+    return db.query(text, params);
+});
 exports.query = query;
+const plainQuery = (text) => __awaiter(void 0, void 0, void 0, function* () {
+    return db.query(text);
+});
+exports.plainQuery = plainQuery;

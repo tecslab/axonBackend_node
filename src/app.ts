@@ -21,7 +21,8 @@ app.get("/", (_req: Request, res: Response): void => {
 
 app.get('/events', getAllEvents);
 app.get('/event/:timestamp', getEventByTimeStamp);
-app.post('/eventsRange/startTimeStamp/finishTimeStamp', getEventsByDateRange);
+app.get('/eventsRange/:startTimeStamp/:finishTimeStamp', getEventsByDateRange);
+// /eventsRange/1706086800000/1706115600000
 
 interface FtpConfig {
   host: string,

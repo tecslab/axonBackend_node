@@ -39,7 +39,7 @@ const pgDB = __importStar(require("./db/postgres"));
 // On the DB table, timestamp is in the format "yyyy-mm-dd HH:MM:SS.ms" which is very similar to date.toISOString();
 const getAllEvents = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const result = yield pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = '$1'", ["faceAppeared"]);
+        const result = yield pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared'");
         response.status(200).json(result.rows[0]);
     }
     catch (error) {
@@ -48,11 +48,13 @@ const getAllEvents = (request, response) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.getAllEvents = getAllEvents;
 const getEventByTimeStamp = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('one event');
     const timeStamp = new Date(parseInt(request.params.timestamp, 10));
     const dateString = timeStamp.toISOString().replace("T", " ").replace("Z", "");
     // no existe id, se debe implementar por timestamp
     try {
-        const result = yield pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp='$1'", [dateString]);
+        //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp='$1'", [dateString]);
+        const result = yield pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp='" + dateString + "'");
         response.status(200).json(result.rows[0][3]);
     }
     catch (error) {
@@ -61,6 +63,7 @@ const getEventByTimeStamp = (request, response) => __awaiter(void 0, void 0, voi
 });
 exports.getEventByTimeStamp = getEventByTimeStamp;
 const getEventsByDateRange = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('here');
     const startTimeStamp = new Date(parseInt(request.params.startTimeStamp, 10));
     const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
     const finishTimeStamp = new Date(parseInt(request.params.finishTimeStamp, 10));
@@ -68,9 +71,10 @@ const getEventsByDateRange = (request, response) => __awaiter(void 0, void 0, vo
     console.log('fetching range data');
     console.log(startDateString + " to " + finishDateString);
     try {
-        const result = yield pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
-        console.log(result);
-        response.status(200).json(result.rows[0]);
+        const result = yield pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'");
+        //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
+        let faceDataReport = processFaceData(result);
+        response.status(200).json(faceDataReport);
     }
     catch (error) {
         console.log("No se pudo recuperar el evento(faceAppeared): " + error);
@@ -78,13 +82,6 @@ const getEventsByDateRange = (request, response) => __awaiter(void 0, void 0, vo
 });
 exports.getEventsByDateRange = getEventsByDateRange;
 const processFaceData = (JSONEvents) => {
-    /* for (let i=0; i>=timeIntervals.length; i++) {
-        let intervalInit : String = timeIntervals[i];
-        let intervalFinish : String = timeIntervals[i+1];
-        JSONEvents.filter(faceEvent => {
-            let eventTime = faceEvent[2];
-        });
-    } */
     let countHombres = 0;
     let countMujeres = 0;
     const ageIntervals = [
@@ -99,9 +96,21 @@ const processFaceData = (JSONEvents) => {
         { start: 55, finish: 35, count: 0 },
         { start: 60, finish: 200, count: 0 }
     ];
-    JSONEvents.forEach((faceEvent) => {
-        let time = new Date(faceEvent.body[2]); // verificar
-        let event = faceEvent.body; // Verify it this needs T and Z
-        let faceEventResult = event.details.faceRecognitionResult;
+    JSONEvents.forEach((faceEventWrapper) => {
+        // let time: Date = new Date(faceEventWrapper.timestamp);
+        let event = faceEventWrapper.event; // Verify it this needs T and Z
+        let faceEventResult = event.body.details[1].faceRecognitionResult;
+        if (faceEventResult.beginTime === "0")
+            return; // to skip results no valids, no valid record use to have 0 as beginTime
+        for (let i = 0; i < ageIntervals.length; i++) {
+            let age = faceEventResult.age;
+            if (age >= ageIntervals[i].start && age < ageIntervals[i].finish) {
+                ageIntervals[i].count++;
+                break;
+            }
+        }
+        let gender = faceEventResult.gender;
+        gender == "FEMALE" ? countMujeres++ : countHombres++;
     });
+    return { countHombres, countMujeres, ageIntervals };
 };
