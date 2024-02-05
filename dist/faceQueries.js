@@ -63,17 +63,10 @@ const getEventByTimeStamp = (request, response) => __awaiter(void 0, void 0, voi
 });
 exports.getEventByTimeStamp = getEventByTimeStamp;
 const getEventsByDateRange = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log('here');
     const startTimeStamp = new Date(parseInt(request.params.startTimeStamp, 10));
-    const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
     const finishTimeStamp = new Date(parseInt(request.params.finishTimeStamp, 10));
-    const finishDateString = finishTimeStamp.toISOString().replace("T", " ").replace("Z", "");
-    console.log('fetching range data');
-    console.log(startDateString + " to " + finishDateString);
     try {
-        const result = yield pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'");
-        //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
-        let faceDataReport = processFaceData(result);
+        const faceDataReport = yield queryEventsByDateRange(startTimeStamp, finishTimeStamp);
         response.status(200).json(faceDataReport);
     }
     catch (error) {
@@ -81,6 +74,22 @@ const getEventsByDateRange = (request, response) => __awaiter(void 0, void 0, vo
     }
 });
 exports.getEventsByDateRange = getEventsByDateRange;
+const queryEventsByDateRange = (startTimeStamp, finishTimeStamp) => __awaiter(void 0, void 0, void 0, function* () {
+    const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
+    const finishDateString = finishTimeStamp.toISOString().replace("T", " ").replace("Z", "");
+    console.log('fetching range data');
+    console.log(startDateString + " to " + finishDateString);
+    try {
+        const result = yield pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'");
+        //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
+        const faceDataReport = processFaceData(result);
+        return faceDataReport;
+    }
+    catch (err) {
+        console.log("No se pudo recuperar el evento(faceAppeared): " + err);
+        throw new Error("Error al recuperar los eventos faces de la BD");
+    }
+});
 const processFaceData = (JSONEvents) => {
     let countHombres = 0;
     let countMujeres = 0;

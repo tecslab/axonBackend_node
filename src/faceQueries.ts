@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import {globalParameters} from './utils/globalParameters';
 const { timeIntervals } = globalParameters;
 import * as pgDB from './db/postgres'
+import { finished } from 'stream';
 
 interface EventWrapper{
   body: any,
@@ -67,21 +68,30 @@ const getEventByTimeStamp = async (request: Request, response: Response) => {
 };
 
 const getEventsByDateRange = async(request: Request, response: Response) => {
-  console.log('here')
-  const startTimeStamp: Date = new Date(parseInt(request.params.startTimeStamp, 10));
-  const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
+  const startTimeStamp : Date = new Date(parseInt(request.params.startTimeStamp, 10));
+  const finishTimeStamp : Date = new Date(parseInt(request.params.finishTimeStamp, 10));
+  
+  try {
+    const faceDataReport : FaceDataReport = await queryEventsByDateRange(startTimeStamp, finishTimeStamp)
+    response.status(200).json(faceDataReport);
+  }catch(error){
+    console.log("No se pudo recuperar el evento(faceAppeared): " + error);
+  }
+}
 
-  const finishTimeStamp: Date = new Date(parseInt(request.params.finishTimeStamp, 10));
+const queryEventsByDateRange = async(startTimeStamp : Date, finishTimeStamp : Date) : Promise<FaceDataReport> => {
+  const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
   const finishDateString = finishTimeStamp.toISOString().replace("T", " ").replace("Z", "");
   console.log('fetching range data');
   console.log(startDateString + " to " + finishDateString);
-  try {
+  try{
     const result = await pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'");
     //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
-    let faceDataReport : FaceDataReport = processFaceData(result)
-    response.status(200).json(faceDataReport);       
-  }catch(error){
-    console.log("No se pudo recuperar el evento(faceAppeared): " + error);
+    const faceDataReport : FaceDataReport = processFaceData(result)
+    return faceDataReport;
+  }catch(err){
+    console.log("No se pudo recuperar el evento(faceAppeared): " + err);
+    throw new Error("Error al recuperar los eventos faces de la BD")
   }
 }
 
