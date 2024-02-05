@@ -4,7 +4,8 @@ import { getAsyncExcelData, writeCSVFile } from "./utils/dataProcessing";
 import { globalParameters } from "./utils/globalParameters";
 const { ftpAddress, ftpUser, ftpPsw } = globalParameters
 // const db = require('./queries')
-import { getAllEvents, getEventByTimeStamp, getEventsByDateRange } from './faceQueries';
+import { getAllEvents, getEventByTimeStamp, getEventsByDateRange, getFacesDayReport } from './faceQueries';
+import { DateRange } from "./utils/commonInterfaces";
 const ftp = require("basic-ftp") 
 var cron = require('node-cron');
 
@@ -22,6 +23,7 @@ app.get("/", (_req: Request, res: Response): void => {
 app.get('/events', getAllEvents);
 app.get('/event/:timestamp', getEventByTimeStamp);
 app.get('/eventsRange/:startTimeStamp/:finishTimeStamp', getEventsByDateRange);
+app.get('/faces-day-report', getFacesDayReport)
 // /eventsRange/1706086800000/1706115600000
 
 interface FtpConfig {
@@ -69,7 +71,7 @@ const closeFTPConnection = async () => {
 const createVisitorsFile = async () => {
   const now = new Date();
   //const now = new Date("2024-01-25 12:00:00")
-  const intervalDate = getIntervalDate(now)
+  const intervalDate : DateRange = getIntervalDate(now)
   const {initDate, finishDate} = intervalDate
   
   const excelData = await getAsyncExcelData({initDate, finishDate});

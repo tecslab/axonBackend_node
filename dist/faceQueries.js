@@ -32,9 +32,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getEventsByDateRange = exports.getEventByTimeStamp = exports.getAllEvents = void 0;
+exports.getFacesDayReport = exports.getEventsByDateRange = exports.getEventByTimeStamp = exports.getAllEvents = exports.getIntervalDateCustom = void 0;
 const globalParameters_1 = require("./utils/globalParameters");
-const { timeIntervals } = globalParameters_1.globalParameters;
+const dateFunctions_1 = require("./utils/dateFunctions");
+const { timeIntervals, detectionStartTime, detectionFinishTime } = globalParameters_1.globalParameters;
 const pgDB = __importStar(require("./db/postgres"));
 // On the DB table, timestamp is in the format "yyyy-mm-dd HH:MM:SS.ms" which is very similar to date.toISOString();
 const getAllEvents = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -74,6 +75,40 @@ const getEventsByDateRange = (request, response) => __awaiter(void 0, void 0, vo
     }
 });
 exports.getEventsByDateRange = getEventsByDateRange;
+const getFacesDayReport = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Face Day Report');
+    //const now = new Date("2024-01-24 12:00:00")
+    const now = new Date();
+    const intervalDate = (0, exports.getIntervalDateCustom)(now);
+    const { _initDate, _finishDate } = intervalDate;
+    console.log(intervalDate);
+    const startTimeStamp = new Date(_initDate);
+    const finishTimeStamp = new Date(_finishDate);
+    console.log("Tiempo de consulta");
+    console.log(startTimeStamp, finishTimeStamp);
+    try {
+        const faceDataReport = yield queryEventsByDateRange(startTimeStamp, finishTimeStamp);
+        response.status(200).json(faceDataReport);
+    }
+    catch (error) {
+        console.log("No se pudo recuperar el evento(faceAppeared): " + error);
+    }
+});
+exports.getFacesDayReport = getFacesDayReport;
+const getIntervalDateCustom = (date) => {
+    // returns the day interval between the processing will be done
+    // receives date On user UTC and transform it to UTC0
+    const _initDate = new Date(date);
+    _initDate.setHours(Number(detectionStartTime.substring(0, 2)));
+    _initDate.setMinutes(Number(detectionStartTime.substring(2, 4)));
+    const initDate = (0, dateFunctions_1.UTCTransform)({ type: "toUTC0", date: _initDate });
+    const _finishDate = new Date(date);
+    _finishDate.setHours(Number(detectionFinishTime.substring(0, 2)));
+    _finishDate.setMinutes(Number(detectionFinishTime.substring(2, 4)));
+    const finishDate = (0, dateFunctions_1.UTCTransform)({ type: "toUTC0", date: _finishDate });
+    return { _initDate, _finishDate };
+};
+exports.getIntervalDateCustom = getIntervalDateCustom;
 const queryEventsByDateRange = (startTimeStamp, finishTimeStamp) => __awaiter(void 0, void 0, void 0, function* () {
     const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
     const finishDateString = finishTimeStamp.toISOString().replace("T", " ").replace("Z", "");

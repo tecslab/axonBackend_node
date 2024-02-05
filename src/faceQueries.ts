@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import {globalParameters} from './utils/globalParameters';
-const { timeIntervals } = globalParameters;
+import { getIntervalDate, UTCTransform } from './utils/dateFunctions';
+import { DateRange } from './utils/commonInterfaces';
+const { timeIntervals, detectionStartTime, detectionFinishTime } = globalParameters;
 import * as pgDB from './db/postgres'
-import { finished } from 'stream';
 
 interface EventWrapper{
   body: any,
@@ -79,6 +80,44 @@ const getEventsByDateRange = async(request: Request, response: Response) => {
   }
 }
 
+const getFacesDayReport = async(request: Request, response: Response) => {
+  console.log('Face Day Report')
+  //const now = new Date("2024-01-24 12:00:00")
+  const now = new Date();
+  const intervalDate = getIntervalDateCustom(now)
+  const {_initDate, _finishDate} = intervalDate
+  console.log(intervalDate)
+
+  const startTimeStamp : Date = new Date(_initDate);
+  const finishTimeStamp : Date = new Date(_finishDate);
+
+  console.log("Tiempo de consulta")
+  console.log(startTimeStamp, finishTimeStamp)
+
+  try {
+    const faceDataReport : FaceDataReport = await queryEventsByDateRange(startTimeStamp, finishTimeStamp)
+    response.status(200).json(faceDataReport);
+  }catch(error){
+    console.log("No se pudo recuperar el evento(faceAppeared): " + error);
+  }
+}
+
+export const getIntervalDateCustom = (date: Date) => {
+  // returns the day interval between the processing will be done
+  // receives date On user UTC and transform it to UTC0
+  const _initDate = new Date(date)
+  _initDate.setHours(Number(detectionStartTime.substring(0, 2)))
+  _initDate.setMinutes(Number(detectionStartTime.substring(2, 4)))
+  const initDate = UTCTransform({ type: "toUTC0", date: _initDate })
+
+  const _finishDate = new Date(date)
+  _finishDate.setHours(Number(detectionFinishTime.substring(0, 2)))
+  _finishDate.setMinutes(Number(detectionFinishTime.substring(2, 4)))
+  const finishDate = UTCTransform({ type: "toUTC0", date: _finishDate })
+
+  return { _initDate, _finishDate }
+}
+
 const queryEventsByDateRange = async(startTimeStamp : Date, finishTimeStamp : Date) : Promise<FaceDataReport> => {
   const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
   const finishDateString = finishTimeStamp.toISOString().replace("T", " ").replace("Z", "");
@@ -135,5 +174,6 @@ const processFaceData = (JSONEvents: EventDBRecord[]) : FaceDataReport =>{
 export {
   getAllEvents,
   getEventByTimeStamp,
-  getEventsByDateRange
+  getEventsByDateRange,
+  getFacesDayReport
 }

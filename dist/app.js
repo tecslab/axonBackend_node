@@ -32,6 +32,7 @@ app.get("/", (_req, res) => {
 app.get('/events', faceQueries_1.getAllEvents);
 app.get('/event/:timestamp', faceQueries_1.getEventByTimeStamp);
 app.get('/eventsRange/:startTimeStamp/:finishTimeStamp', faceQueries_1.getEventsByDateRange);
+app.get('/faces-day-report', faceQueries_1.getFacesDayReport);
 const ftpConfig = {
     host: ftpAddress,
     port: 21,
