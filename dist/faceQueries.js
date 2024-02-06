@@ -32,9 +32,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getFacesDayReport = exports.getEventsByDateRange = exports.getEventByTimeStamp = exports.getAllEvents = exports.getIntervalDateCustom = void 0;
+exports.geyFacesDayReportByIntervals = exports.getFacesDayReport = exports.getEventsByDateRange = exports.getEventByTimeStamp = exports.getAllEvents = exports.getIntervalDateCustom = void 0;
 const globalParameters_1 = require("./utils/globalParameters");
-const dateFunctions_1 = require("./utils/dateFunctions");
 const { timeIntervals, detectionStartTime, detectionFinishTime } = globalParameters_1.globalParameters;
 const pgDB = __importStar(require("./db/postgres"));
 // On the DB table, timestamp is in the format "yyyy-mm-dd HH:MM:SS.ms" which is very similar to date.toISOString();
@@ -67,7 +66,8 @@ const getEventsByDateRange = (request, response) => __awaiter(void 0, void 0, vo
     const startTimeStamp = new Date(parseInt(request.params.startTimeStamp, 10));
     const finishTimeStamp = new Date(parseInt(request.params.finishTimeStamp, 10));
     try {
-        const faceDataReport = yield queryEventsByDateRange(startTimeStamp, finishTimeStamp);
+        const facesEvents = yield getFacesEventsByDateRange(startTimeStamp, finishTimeStamp);
+        const faceDataReport = processFaceData(facesEvents);
         response.status(200).json(faceDataReport);
     }
     catch (error) {
@@ -76,18 +76,17 @@ const getEventsByDateRange = (request, response) => __awaiter(void 0, void 0, vo
 });
 exports.getEventsByDateRange = getEventsByDateRange;
 const getFacesDayReport = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log('Face Day Report');
-    //const now = new Date("2024-01-24 12:00:00")
-    const now = new Date();
+    console.log('Faces Day Report');
+    // "2024-01-24 12:00:00" is the same as "2024-01-24T(12-utc):00:00Z"
+    const now = new Date("2024-01-24 12:00:00");
+    //const now = new Date();
     const intervalDate = (0, exports.getIntervalDateCustom)(now);
     const { _initDate, _finishDate } = intervalDate;
-    console.log(intervalDate);
-    const startTimeStamp = new Date(_initDate);
-    const finishTimeStamp = new Date(_finishDate);
     console.log("Tiempo de consulta");
-    console.log(startTimeStamp, finishTimeStamp);
+    console.log(_initDate, _finishDate);
     try {
-        const faceDataReport = yield queryEventsByDateRange(startTimeStamp, finishTimeStamp);
+        const facesEvents = yield getFacesEventsByDateRange(_initDate, _finishDate);
+        const faceDataReport = processFaceData(facesEvents);
         response.status(200).json(faceDataReport);
     }
     catch (error) {
@@ -95,21 +94,40 @@ const getFacesDayReport = (request, response) => __awaiter(void 0, void 0, void 
     }
 });
 exports.getFacesDayReport = getFacesDayReport;
+const geyFacesDayReportByIntervals = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    const now = new Date("2024-01-24 12:00:00");
+    //const now = new Date();
+    const intervalDate = (0, exports.getIntervalDateCustom)(now);
+    const { _initDate, _finishDate } = intervalDate;
+    console.log("Tiempo de consulta");
+    console.log(_initDate, _finishDate);
+    try {
+        const facesEvents = yield getFacesEventsByDateRange(_initDate, _finishDate);
+        let result = [];
+        timeIntervals.forEach(timeInterval => {
+            let intervalFaceEvents = facesEvents.filter(faceEvent => (new Date(faceEvent.timestamp)).getHours() === Number(timeInterval.slice(0, 2)));
+            const faceDataReport = processFaceData(intervalFaceEvents);
+            result.push(faceDataReport);
+        });
+        response.status(200).json(result);
+    }
+    catch (error) {
+        console.log("No se pudo recuperar el evento(faceAppeared): " + error);
+    }
+});
+exports.geyFacesDayReportByIntervals = geyFacesDayReportByIntervals;
 const getIntervalDateCustom = (date) => {
     // returns the day interval between the processing will be done
-    // receives date On user UTC and transform it to UTC0
     const _initDate = new Date(date);
     _initDate.setHours(Number(detectionStartTime.substring(0, 2)));
     _initDate.setMinutes(Number(detectionStartTime.substring(2, 4)));
-    const initDate = (0, dateFunctions_1.UTCTransform)({ type: "toUTC0", date: _initDate });
     const _finishDate = new Date(date);
     _finishDate.setHours(Number(detectionFinishTime.substring(0, 2)));
     _finishDate.setMinutes(Number(detectionFinishTime.substring(2, 4)));
-    const finishDate = (0, dateFunctions_1.UTCTransform)({ type: "toUTC0", date: _finishDate });
     return { _initDate, _finishDate };
 };
 exports.getIntervalDateCustom = getIntervalDateCustom;
-const queryEventsByDateRange = (startTimeStamp, finishTimeStamp) => __awaiter(void 0, void 0, void 0, function* () {
+const getFacesEventsByDateRange = (startTimeStamp, finishTimeStamp) => __awaiter(void 0, void 0, void 0, function* () {
     const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
     const finishDateString = finishTimeStamp.toISOString().replace("T", " ").replace("Z", "");
     console.log('fetching range data');
@@ -117,8 +135,7 @@ const queryEventsByDateRange = (startTimeStamp, finishTimeStamp) => __awaiter(vo
     try {
         const result = yield pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'");
         //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
-        const faceDataReport = processFaceData(result);
-        return faceDataReport;
+        return result;
     }
     catch (err) {
         console.log("No se pudo recuperar el evento(faceAppeared): " + err);

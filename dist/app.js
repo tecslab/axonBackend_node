@@ -33,6 +33,7 @@ app.get('/events', faceQueries_1.getAllEvents);
 app.get('/event/:timestamp', faceQueries_1.getEventByTimeStamp);
 app.get('/eventsRange/:startTimeStamp/:finishTimeStamp', faceQueries_1.getEventsByDateRange);
 app.get('/faces-day-report', faceQueries_1.getFacesDayReport);
+app.get('/full-faces-day-report', faceQueries_1.geyFacesDayReportByIntervals);
 const ftpConfig = {
     host: ftpAddress,
     port: 21,

@@ -73,7 +73,8 @@ const getEventsByDateRange = async(request: Request, response: Response) => {
   const finishTimeStamp : Date = new Date(parseInt(request.params.finishTimeStamp, 10));
   
   try {
-    const faceDataReport : FaceDataReport = await queryEventsByDateRange(startTimeStamp, finishTimeStamp)
+    const facesEvents : EventDBRecord[] = await getFacesEventsByDateRange(startTimeStamp, finishTimeStamp)
+    const faceDataReport : FaceDataReport = processFaceData(facesEvents)
     response.status(200).json(faceDataReport);
   }catch(error){
     console.log("No se pudo recuperar el evento(faceAppeared): " + error);
@@ -81,22 +82,43 @@ const getEventsByDateRange = async(request: Request, response: Response) => {
 }
 
 const getFacesDayReport = async(request: Request, response: Response) => {
-  console.log('Face Day Report')
-  //const now = new Date("2024-01-24 12:00:00")
-  const now = new Date();
+  console.log('Faces Day Report')
+  // "2024-01-24 12:00:00" is the same as "2024-01-24T(12-utc):00:00Z"
+  const now = new Date("2024-01-24 12:00:00")
+  //const now = new Date();
   const intervalDate = getIntervalDateCustom(now)
   const {_initDate, _finishDate} = intervalDate
-  console.log(intervalDate)
-
-  const startTimeStamp : Date = new Date(_initDate);
-  const finishTimeStamp : Date = new Date(_finishDate);
 
   console.log("Tiempo de consulta")
-  console.log(startTimeStamp, finishTimeStamp)
+  console.log(_initDate, _finishDate)
 
   try {
-    const faceDataReport : FaceDataReport = await queryEventsByDateRange(startTimeStamp, finishTimeStamp)
+    const facesEvents : EventDBRecord[] = await getFacesEventsByDateRange(_initDate, _finishDate)
+    const faceDataReport : FaceDataReport = processFaceData(facesEvents)
     response.status(200).json(faceDataReport);
+  }catch(error){
+    console.log("No se pudo recuperar el evento(faceAppeared): " + error);
+  }
+}
+
+const geyFacesDayReportByIntervals = async(request: Request, response: Response) => {
+  const now = new Date("2024-01-24 12:00:00")
+  //const now = new Date();
+  const intervalDate = getIntervalDateCustom(now)
+  const {_initDate, _finishDate} = intervalDate
+
+  console.log("Tiempo de consulta")
+  console.log(_initDate, _finishDate)
+
+  try {
+    const facesEvents : EventDBRecord[] = await getFacesEventsByDateRange(_initDate, _finishDate)
+    let result : any = [];
+    timeIntervals.forEach(timeInterval => {
+      let intervalFaceEvents : EventDBRecord[] = facesEvents.filter(faceEvent => (new Date(faceEvent.timestamp)).getHours() === Number(timeInterval.slice(0,2)))
+      const faceDataReport : FaceDataReport = processFaceData(intervalFaceEvents)
+      result.push(faceDataReport);
+    })
+    response.status(200).json(result);
   }catch(error){
     console.log("No se pudo recuperar el evento(faceAppeared): " + error);
   }
@@ -104,30 +126,26 @@ const getFacesDayReport = async(request: Request, response: Response) => {
 
 export const getIntervalDateCustom = (date: Date) => {
   // returns the day interval between the processing will be done
-  // receives date On user UTC and transform it to UTC0
   const _initDate = new Date(date)
   _initDate.setHours(Number(detectionStartTime.substring(0, 2)))
   _initDate.setMinutes(Number(detectionStartTime.substring(2, 4)))
-  const initDate = UTCTransform({ type: "toUTC0", date: _initDate })
 
   const _finishDate = new Date(date)
   _finishDate.setHours(Number(detectionFinishTime.substring(0, 2)))
   _finishDate.setMinutes(Number(detectionFinishTime.substring(2, 4)))
-  const finishDate = UTCTransform({ type: "toUTC0", date: _finishDate })
 
   return { _initDate, _finishDate }
 }
 
-const queryEventsByDateRange = async(startTimeStamp : Date, finishTimeStamp : Date) : Promise<FaceDataReport> => {
+const getFacesEventsByDateRange = async(startTimeStamp : Date, finishTimeStamp : Date) : Promise<EventDBRecord[]> => {
   const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
   const finishDateString = finishTimeStamp.toISOString().replace("T", " ").replace("Z", "");
   console.log('fetching range data');
   console.log(startDateString + " to " + finishDateString);
   try{
-    const result = await pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'");
+    const result: EventDBRecord[] = await pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'");
     //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
-    const faceDataReport : FaceDataReport = processFaceData(result)
-    return faceDataReport;
+    return result;
   }catch(err){
     console.log("No se pudo recuperar el evento(faceAppeared): " + err);
     throw new Error("Error al recuperar los eventos faces de la BD")
@@ -175,5 +193,6 @@ export {
   getAllEvents,
   getEventByTimeStamp,
   getEventsByDateRange,
-  getFacesDayReport
+  getFacesDayReport,
+  geyFacesDayReportByIntervals
 }
