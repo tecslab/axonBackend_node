@@ -34,8 +34,9 @@ interface FaceEventResult{
 
 interface AgeIntervalCount{
   start: number,
-  finish: number,
-  count: number
+  end: number,
+  count: number,
+  backgroundColor: String
 }
 
 interface FaceDataReport {
@@ -43,6 +44,19 @@ interface FaceDataReport {
   countMujeres: number,
   ageIntervals: AgeIntervalCount[]
 }
+
+const ageIntervals : AgeIntervalCount[] = [
+  {start: 0, end: 15, count:0, backgroundColor: "aquamarine" },
+  {start: 15, end: 20, count:0, backgroundColor: "bisque"},
+  {start: 20, end: 30, count:0, backgroundColor: "blueviolet"},
+  {start: 30, end: 35, count:0, backgroundColor: "brown"},
+  {start: 35, end: 35, count:0, backgroundColor: "cadetblue"},
+  {start: 40, end: 35, count:0, backgroundColor: "coral"},
+  {start: 45, end: 35, count:0, backgroundColor: "cyan"},
+  {start: 50, end: 35, count:0, backgroundColor: "darkblue"},
+  {start: 55, end: 35, count:0, backgroundColor: "darkgray"},
+  {start: 60, end: 200, count:0, backgroundColor: "darkgreen"}
+]
 
 // On the DB table, timestamp is in the format "yyyy-mm-dd HH:MM:SS.ms" which is very similar to date.toISOString();
 const getAllEvents = async(request: Request, response: Response) =>  {
@@ -124,6 +138,46 @@ const geyFacesDayReportByIntervals = async(request: Request, response: Response)
   }
 }
 
+const getFacesReportForChart = async(request: Request, response: Response) =>{
+  const selectedDay : Date = new Date(parseInt(request.params.selectedDay, 10));
+  //const selectedDay = new Date("2024-01-24 12:00:00")
+  const intervalDate = getIntervalDateCustom(selectedDay)
+  const {_initDate, _finishDate} = intervalDate
+
+  console.log("Tiempo de consulta")
+  console.log(_initDate, _finishDate)
+
+  try {
+    const facesEvents : EventDBRecord[] = await getFacesEventsByDateRange(_initDate, _finishDate)
+    let reportsArray : FaceDataReport[] = [];
+    timeIntervals.forEach(timeInterval => {
+      let intervalFaceEvents : EventDBRecord[] = facesEvents.filter((faceEvent) => (new Date(faceEvent.timestamp)).getHours() === Number(timeInterval.slice(0,2)))
+      const faceDataReport : FaceDataReport = processFaceData(intervalFaceEvents)
+      reportsArray.push(faceDataReport);
+    })
+
+    const ageIntervalsData : Array<any> = [];
+
+    for (let i=0; i<ageIntervals.length; i++){
+      // reduce cada faceDataReport al conteo del intervalo de tiempo que corresponde
+      let dayIntervalRecords : number[] =  reportsArray.map(faceDataReport => {
+        return faceDataReport.ageIntervals[i].count;
+      })
+      const dataAgeInterval = {
+        type: "bar",
+        label: ageIntervals[i].start,
+        backgroundColor: ageIntervals[i].backgroundColor,
+        data: dayIntervalRecords
+      }
+      
+      ageIntervalsData.push(ageIntervalsData);
+    }
+    response.status(200).json(ageIntervalsData);
+  }catch(error){
+    console.log("No se pudo recuperar el evento(faceAppeared): " + error);
+  }
+}
+
 export const getIntervalDateCustom = (date: Date) => {
   // returns the day interval between the processing will be done
   const _initDate = new Date(date)
@@ -155,18 +209,7 @@ const getFacesEventsByDateRange = async(startTimeStamp : Date, finishTimeStamp :
 const processFaceData = (JSONEvents: EventDBRecord[]) : FaceDataReport =>{
   let countHombres = 0;
   let countMujeres = 0;
-  const ageIntervals : AgeIntervalCount[] = [
-    {start: 0, finish: 15, count:0},
-    {start: 15, finish: 20, count:0},
-    {start: 20, finish: 30, count:0},
-    {start: 30, finish: 35, count:0},
-    {start: 35, finish: 35, count:0},
-    {start: 40, finish: 35, count:0},
-    {start: 45, finish: 35, count:0},
-    {start: 50, finish: 35, count:0},
-    {start: 55, finish: 35, count:0},
-    {start: 60, finish: 200, count:0}
-  ]
+  
 
   JSONEvents.forEach( (faceEventWrapper : EventDBRecord) => {
     // let time: Date = new Date(faceEventWrapper.timestamp);
@@ -177,7 +220,7 @@ const processFaceData = (JSONEvents: EventDBRecord[]) : FaceDataReport =>{
     
     for (let i=0; i<ageIntervals.length; i++){
       let age = faceEventResult.age;
-      if (age >= ageIntervals[i].start && age < ageIntervals[i].finish){
+      if (age >= ageIntervals[i].start && age < ageIntervals[i].end){
         ageIntervals[i].count++
         break;
       }
@@ -194,5 +237,6 @@ export {
   getEventByTimeStamp,
   getEventsByDateRange,
   getFacesDayReport,
-  geyFacesDayReportByIntervals
+  geyFacesDayReportByIntervals,
+  getFacesReportForChart
 }
