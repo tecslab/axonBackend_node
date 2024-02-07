@@ -103,13 +103,13 @@ const geyFacesDayReportByIntervals = (request, response) => __awaiter(void 0, vo
     console.log(_initDate, _finishDate);
     try {
         const facesEvents = yield getFacesEventsByDateRange(_initDate, _finishDate);
-        let result = [];
+        let reportsArray = [];
         timeIntervals.forEach(timeInterval => {
-            let intervalFaceEvents = facesEvents.filter(faceEvent => (new Date(faceEvent.timestamp)).getHours() === Number(timeInterval.slice(0, 2)));
+            let intervalFaceEvents = facesEvents.filter((faceEvent) => (new Date(faceEvent.timestamp)).getHours() === Number(timeInterval.slice(0, 2)));
             const faceDataReport = processFaceData(intervalFaceEvents);
-            result.push(faceDataReport);
+            reportsArray.push(faceDataReport);
         });
-        response.status(200).json(result);
+        response.status(200).json(reportsArray);
     }
     catch (error) {
         console.log("No se pudo recuperar el evento(faceAppeared): " + error);

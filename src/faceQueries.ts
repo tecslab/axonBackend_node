@@ -112,13 +112,13 @@ const geyFacesDayReportByIntervals = async(request: Request, response: Response)
 
   try {
     const facesEvents : EventDBRecord[] = await getFacesEventsByDateRange(_initDate, _finishDate)
-    let result : any = [];
+    let reportsArray : FaceDataReport[] = [];
     timeIntervals.forEach(timeInterval => {
-      let intervalFaceEvents : EventDBRecord[] = facesEvents.filter(faceEvent => (new Date(faceEvent.timestamp)).getHours() === Number(timeInterval.slice(0,2)))
+      let intervalFaceEvents : EventDBRecord[] = facesEvents.filter((faceEvent) => (new Date(faceEvent.timestamp)).getHours() === Number(timeInterval.slice(0,2)))
       const faceDataReport : FaceDataReport = processFaceData(intervalFaceEvents)
-      result.push(faceDataReport);
+      reportsArray.push(faceDataReport);
     })
-    response.status(200).json(result);
+    response.status(200).json(reportsArray);
   }catch(error){
     console.log("No se pudo recuperar el evento(faceAppeared): " + error);
   }
