@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+var cors = require('cors');
 const dateFunctions_1 = require("./utils/dateFunctions");
 const dataProcessing_1 = require("./utils/dataProcessing");
 const globalParameters_1 = require("./utils/globalParameters");
@@ -23,6 +24,7 @@ const ftp = require("basic-ftp");
 var cron = require('node-cron');
 const app = (0, express_1.default)();
 const port = Number(process.env.PORT) || 3000;
+app.use(cors());
 app.listen(port, () => {
     console.log(`Listening on ${port} ...`);
 });
@@ -34,6 +36,7 @@ app.get('/event/:timestamp', faceQueries_1.getEventByTimeStamp);
 app.get('/eventsRange/:startTimeStamp/:finishTimeStamp', faceQueries_1.getEventsByDateRange);
 app.get('/faces-day-report', faceQueries_1.getFacesDayReport);
 app.get('/full-faces-day-report', faceQueries_1.geyFacesDayReportByIntervals);
+app.get('/get-faces-report-for-chart/:selectedDay', faceQueries_1.getFacesReportForChart);
 const ftpConfig = {
     host: ftpAddress,
     port: 21,

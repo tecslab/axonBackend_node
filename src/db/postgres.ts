@@ -17,5 +17,12 @@ export const query = async(text: string, params: Array<any>) : Promise<any>=> {
 }
 
 export const plainQuery = async(text: string) : Promise<any> => {
+  //db.query('SET TIME ZONE "America/Bogota"');
+  return db.query(text)
+}
+
+export const queryWithDateRange = async(text: string, initDate : Date, endDate: Date) : Promise<any> => {
+  //initDate.setHours(initDate.getHours()+5);
+  //endDate.setHours(endDate.getHours()+5);
   return db.query(text)
 }

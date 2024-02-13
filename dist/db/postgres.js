@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.plainQuery = exports.query = void 0;
+exports.queryWithDateRange = exports.plainQuery = exports.query = void 0;
 const pgp = require('pg-promise')();
 const config = {
     user: 'ngp',
@@ -24,6 +24,13 @@ const query = (text, params) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.query = query;
 const plainQuery = (text) => __awaiter(void 0, void 0, void 0, function* () {
+    //db.query('SET TIME ZONE "America/Bogota"');
     return db.query(text);
 });
 exports.plainQuery = plainQuery;
+const queryWithDateRange = (text, initDate, endDate) => __awaiter(void 0, void 0, void 0, function* () {
+    //initDate.setHours(initDate.getHours()+5);
+    //endDate.setHours(endDate.getHours()+5);
+    return db.query(text);
+});
+exports.queryWithDateRange = queryWithDateRange;

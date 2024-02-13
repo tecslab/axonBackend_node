@@ -32,10 +32,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.geyFacesDayReportByIntervals = exports.getFacesDayReport = exports.getEventsByDateRange = exports.getEventByTimeStamp = exports.getAllEvents = exports.getIntervalDateCustom = void 0;
+exports.getFacesReportForChart = exports.geyFacesDayReportByIntervals = exports.getFacesDayReport = exports.getEventsByDateRange = exports.getEventByTimeStamp = exports.getAllEvents = exports.getIntervalDateCustom = void 0;
 const globalParameters_1 = require("./utils/globalParameters");
 const { timeIntervals, detectionStartTime, detectionFinishTime } = globalParameters_1.globalParameters;
 const pgDB = __importStar(require("./db/postgres"));
+const ageIntervals = [
+    { start: 0, end: 15, count: 0, backgroundColor: "aquamarine" },
+    { start: 15, end: 20, count: 0, backgroundColor: "bisque" },
+    { start: 20, end: 30, count: 0, backgroundColor: "blueviolet" },
+    { start: 30, end: 35, count: 0, backgroundColor: "brown" },
+    { start: 35, end: 40, count: 0, backgroundColor: "cadetblue" },
+    { start: 40, end: 45, count: 0, backgroundColor: "coral" },
+    { start: 45, end: 50, count: 0, backgroundColor: "cyan" },
+    { start: 50, end: 55, count: 0, backgroundColor: "darkblue" },
+    { start: 55, end: 60, count: 0, backgroundColor: "darkgray" },
+    { start: 60, end: 200, count: 0, backgroundColor: "darkgreen" }
+];
 // On the DB table, timestamp is in the format "yyyy-mm-dd HH:MM:SS.ms" which is very similar to date.toISOString();
 const getAllEvents = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -95,7 +107,7 @@ const getFacesDayReport = (request, response) => __awaiter(void 0, void 0, void 
 });
 exports.getFacesDayReport = getFacesDayReport;
 const geyFacesDayReportByIntervals = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    const now = new Date("2024-01-24 12:00:00");
+    const now = new Date("2024-02-10 12:00:00");
     //const now = new Date();
     const intervalDate = (0, exports.getIntervalDateCustom)(now);
     const { _initDate, _finishDate } = intervalDate;
@@ -105,9 +117,9 @@ const geyFacesDayReportByIntervals = (request, response) => __awaiter(void 0, vo
         const facesEvents = yield getFacesEventsByDateRange(_initDate, _finishDate);
         let reportsArray = [];
         timeIntervals.forEach(timeInterval => {
-            let intervalFaceEvents = facesEvents.filter((faceEvent) => (new Date(faceEvent.timestamp)).getHours() === Number(timeInterval.slice(0, 2)));
-            const faceDataReport = processFaceData(intervalFaceEvents);
-            reportsArray.push(faceDataReport);
+            let intervalFaceEvents = facesEvents.filter((faceEvent) => (new Date(faceEvent.timestamp)).getHours() - 5 === Number(timeInterval.slice(0, 2)));
+            const faceDataReport1 = processFaceData(intervalFaceEvents);
+            reportsArray.push(faceDataReport1);
         });
         response.status(200).json(reportsArray);
     }
@@ -116,6 +128,42 @@ const geyFacesDayReportByIntervals = (request, response) => __awaiter(void 0, vo
     }
 });
 exports.geyFacesDayReportByIntervals = geyFacesDayReportByIntervals;
+const getFacesReportForChart = (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    const selectedDay = new Date(parseInt(request.params.selectedDay, 10));
+    //const selectedDay = new Date("2024-01-24 12:00:00")
+    const intervalDate = (0, exports.getIntervalDateCustom)(selectedDay);
+    const { _initDate, _finishDate } = intervalDate;
+    try {
+        const facesEvents = yield getFacesEventsByDateRange(_initDate, _finishDate);
+        let reportsArray = [];
+        timeIntervals.forEach(timeInterval => {
+            let intervalFaceEvents = facesEvents.filter((faceEvent) => (new Date(faceEvent.timestamp)).getHours() - 5 === Number(timeInterval.slice(0, 2)));
+            const faceDataReport = processFaceData(intervalFaceEvents);
+            reportsArray.push(faceDataReport);
+        });
+        const ageIntervalsData = [];
+        for (let i = 0; i < ageIntervals.length; i++) {
+            // reduce cada faceDataReport al conteo del intervalo de tiempo que corresponde
+            let dayIntervalRecords = reportsArray.map(faceDataReport => faceDataReport.ageIntervals[i].count);
+            const dataAgeInterval = {
+                type: "bar",
+                label: ageIntervals[i].start,
+                backgroundColor: ageIntervals[i].backgroundColor,
+                data: dayIntervalRecords
+            };
+            ageIntervalsData.push(dataAgeInterval);
+        }
+        const facesReportForChart = {
+            labels: timeIntervals,
+            datasets: ageIntervalsData
+        };
+        response.status(200).json(facesReportForChart);
+    }
+    catch (error) {
+        console.log("No se pudo recuperar el evento(faceAppeared): " + error);
+    }
+});
+exports.getFacesReportForChart = getFacesReportForChart;
 const getIntervalDateCustom = (date) => {
     // returns the day interval between the processing will be done
     const _initDate = new Date(date);
@@ -128,13 +176,18 @@ const getIntervalDateCustom = (date) => {
 };
 exports.getIntervalDateCustom = getIntervalDateCustom;
 const getFacesEventsByDateRange = (startTimeStamp, finishTimeStamp) => __awaiter(void 0, void 0, void 0, function* () {
-    const startDateString = startTimeStamp.toISOString().replace("T", " ").replace("Z", "");
-    const finishDateString = finishTimeStamp.toISOString().replace("T", " ").replace("Z", "");
+    const startDateString = startTimeStamp.toISOString(); //.replace("T", " ").replace("Z", "");
+    const finishDateString = finishTimeStamp.toISOString(); //.replace("T", " ").replace("Z", "");
     console.log('fetching range data');
     console.log(startDateString + " to " + finishDateString);
     try {
-        const result = yield pgDB.plainQuery("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'");
+        const query = "SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'";
+        //const query : string = "SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '2024-02-08T09:00:26.021Z' AND '2024-02-09T02:00:26.021Z'"
+        console.log(query);
+        const result = yield pgDB.plainQuery(query);
         //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
+        console.log(result[0]);
+        //console.log(result[result.length-1])
         return result;
     }
     catch (err) {
@@ -145,33 +198,22 @@ const getFacesEventsByDateRange = (startTimeStamp, finishTimeStamp) => __awaiter
 const processFaceData = (JSONEvents) => {
     let countHombres = 0;
     let countMujeres = 0;
-    const ageIntervals = [
-        { start: 0, finish: 15, count: 0 },
-        { start: 15, finish: 20, count: 0 },
-        { start: 20, finish: 30, count: 0 },
-        { start: 30, finish: 35, count: 0 },
-        { start: 35, finish: 35, count: 0 },
-        { start: 40, finish: 35, count: 0 },
-        { start: 45, finish: 35, count: 0 },
-        { start: 50, finish: 35, count: 0 },
-        { start: 55, finish: 35, count: 0 },
-        { start: 60, finish: 200, count: 0 }
-    ];
+    let ageIntervaleInstance = JSON.parse(JSON.stringify(ageIntervals));
     JSONEvents.forEach((faceEventWrapper) => {
         // let time: Date = new Date(faceEventWrapper.timestamp);
-        let event = faceEventWrapper.event; // Verify it this needs T and Z
-        let faceEventResult = event.body.details[1].faceRecognitionResult;
+        const event = faceEventWrapper.event; // Verify it this needs T and Z
+        const faceEventResult = event.body.details[1].faceRecognitionResult;
         if (faceEventResult.beginTime === "0")
             return; // to skip results no valids, no valid record use to have 0 as beginTime
-        for (let i = 0; i < ageIntervals.length; i++) {
+        for (let i = 0; i < ageIntervaleInstance.length; i++) {
             let age = faceEventResult.age;
-            if (age >= ageIntervals[i].start && age < ageIntervals[i].finish) {
-                ageIntervals[i].count++;
+            if (age >= ageIntervaleInstance[i].start && age < ageIntervaleInstance[i].end) {
+                ageIntervaleInstance[i].count++;
                 break;
             }
         }
         let gender = faceEventResult.gender;
         gender == "FEMALE" ? countMujeres++ : countHombres++;
     });
-    return { countHombres, countMujeres, ageIntervals };
+    return { countHombres, countMujeres, ageIntervals: ageIntervaleInstance };
 };

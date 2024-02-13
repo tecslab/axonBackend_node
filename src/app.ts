@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from "express";
+var cors = require('cors')
 import { getIntervalDate } from "./utils/dateFunctions";
 import { getAsyncExcelData, writeCSVFile } from "./utils/dataProcessing";
 import { globalParameters } from "./utils/globalParameters";
@@ -12,6 +13,8 @@ var cron = require('node-cron');
 
 const app : Express = express();
 const port : number = Number(process.env.PORT )|| 3000;
+
+app.use(cors())
 
 app.listen(port, () => {
   console.log(`Listening on ${ port } ...`);
