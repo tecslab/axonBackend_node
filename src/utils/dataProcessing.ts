@@ -94,11 +94,18 @@ export const writeCSVFile = async (records: ExcelRow[]): Promise<any> =>{
     path: filePath
   });
 
-  await csvWriter.writeRecords(records)       // returns a promise
+  await csvWriter.writeRecords(records)  // returns a promise
     .then(() => {
-        console.log('...Done');
-    });
+      console.log('...Done');
+    }).catch((err : any) => { throw new Error(err) });
+}
 
-  // may be the best is just return the  status of the operation
-  return filePath
+export const createVisitorsFile = async () => {
+  const now = new Date();
+  //const now = new Date("2024-01-25 12:00:00")
+  const intervalDate : DateRange = getIntervalDate(now)
+  const {initDate, finishDate} = intervalDate
+  
+  const excelData = await getAsyncExcelData({initDate, finishDate});
+  await writeCSVFile(excelData)
 }
