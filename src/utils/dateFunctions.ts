@@ -1,14 +1,14 @@
 import { globalParameters } from "./globalParameters";
-import { DateRange } from "./commonInterfaces";
-const { utc, detectionStartTime, detectionFinishTime } = globalParameters
+import { DateRange, EventData, EventsDto } from "./commonInterfaces";
+const { utc, detectionStartTime, detectionFinishTime } = globalParameters;
 
-export function dataToStdFormat(eventsArray: any[]): any[] {
-
-  eventsArray.forEach(_event => {
-    _event.timestamp = UTCTransform({ type: "toCurrentUTC", date: parseDate(_event.timestamp) })
+export function dataToStdFormat(eventsArray: EventsDto["events"]) : EventData[] {
+  // transform the events timestamp to the date uses in the app
+  let newEventsArray : EventData[] = eventsArray.map(_event =>{
+    return {..._event, timestamp: UTCTransform({ type: "toCurrentUTC", date: parseDate(_event.timestamp) }) }
   })
 
-  return eventsArray;
+  return newEventsArray;
 }
 
 interface DateToTransform {
@@ -17,7 +17,7 @@ interface DateToTransform {
   date: Date
 }
 
-export const UTCTransform = ({type, date}: DateToTransform): Date =>{
+export const UTCTransform = ( { type, date} : DateToTransform): Date =>{
   // utc is the number of utc time zone
   let newDate: number | undefined;
   if (type==="toUTC0"){

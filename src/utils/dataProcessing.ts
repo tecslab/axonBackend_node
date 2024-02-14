@@ -2,22 +2,34 @@ import { getIntervalDate, parseDate } from "./dateFunctions";
 import { getVisitorsData } from "./dataFetcher";
 const createCsvWriter = require('csv-writer').createArrayCsvWriter;
 import { DateRange } from "./commonInterfaces";
+import { globalParameters } from "./globalParameters";
+const { timeIntervals } = globalParameters;
 
-const timeIntervals = ['09H00', '10H00', '11H00', '12H00', '13H00', '14H00', '15H00', '16H00', '17H00', '18H00', '19H00', '20H00', '21H00']
-
-type ExcelRow = [ string, string, number | string, number | string, string, string, string, string | number, string, string, string, string, string];
+type ExcelRow = [ string, 
+                  string, 
+                  number | string, 
+                  number | string, 
+                  string, 
+                  string, 
+                  string, 
+                  string | number, 
+                  string, 
+                  string, 
+                  string, 
+                  string, 
+                  string];
 // fix to use the type
 
 export const getFormatExcelData = (timeLine: any, date: Date): ExcelRow[] => {
   // Set data in format required by Colineal
   //let excelData = [["DIRECCION_ip", "TIENDA", "ENTRADAS", "SALIDAS", "dia", "mes", "anio", "DIASEM", "hora", "SEMANA", "SOLOHORA", "DIA_SEMANA", "FECHAHORA"]]
-  const excelData = []
-  const year = date.getFullYear().toString();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const dayOfWeek = date.getDay() + 1
+  const excelData : ExcelRow[]= []
+  const year : string = date.getFullYear().toString();
+  const month : string = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day : string = date.getDate().toString().padStart(2, '0');
+  const dayOfWeek : number = date.getDay() + 1
 
-  let stringDay;
+  let stringDay : string;
   switch (dayOfWeek) {
     case 1:
       stringDay = "Domingo"
