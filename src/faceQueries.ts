@@ -1,25 +1,9 @@
 import { Request, Response } from 'express';
 import {globalParameters} from './utils/globalParameters';
 import { getIntervalDate, UTCTransform } from './utils/dateFunctions';
-import { DateRange } from './utils/commonInterfaces';
+import { EventDBRecord, EventWrapper } from './utils/commonInterfaces';
 const { timeIntervals, detectionStartTime, detectionFinishTime } = globalParameters;
 import * as pgDB from './db/postgres'
-
-interface EventWrapper{
-  body: any,
-  subject: string,
-  subjects: string[],
-  eventType: string,
-  localization: any
-}
-
-interface EventDBRecord {
-  type: number,
-  subjects: string[],
-  timestamp: Date,
-  event: EventWrapper,
-  ts_vector: string
-}
 
 interface FaceEventResult{
   age: number,
@@ -201,7 +185,7 @@ const getFacesEventsByDateRange = async(startTimeStamp : Date, finishTimeStamp :
     const query : string = "SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '" + startDateString + "' AND '" + finishDateString + "'"
     //const query : string = "SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '2024-02-08T09:00:26.021Z' AND '2024-02-09T02:00:26.021Z'"
     console.log(query)
-    const result: EventDBRecord[] = await pgDB.plainQuery(query);
+    const result : EventDBRecord[] = await pgDB.plainQuery(query);
     //const result = await pgDB.query("SELECT * FROM t_event WHERE event->'body'->>'eventType' = 'faceAppeared' AND timestamp BETWEEN '$1' AND '$2'", [startDateString, finishDateString]);
     console.log(result[0])
     //console.log(result[result.length-1])
