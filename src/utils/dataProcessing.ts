@@ -1,9 +1,10 @@
 import { getIntervalDate, parseDate } from "./dateFunctions";
 import { getVisitorsData } from "./dataFetcher";
 const createCsvWriter = require('csv-writer').createArrayCsvWriter;
-import { DateRange } from "./commonInterfaces";
+import { DateRange, VisitorsData, FaceDataReport, EventData, EventDBRecord } from "./commonInterfaces";
 import { globalParameters } from "./globalParameters";
-const { timeIntervals } = globalParameters;
+import { processFaceData, getIntervalDateCustom, queryFacesEventsByDateRange } from "./facesDataFunctions";
+const { timeIntervals, utc } = globalParameters;
 
 type ExcelRow = [ string, 
                   string, 
@@ -12,15 +13,56 @@ type ExcelRow = [ string,
                   string, 
                   string, 
                   string, 
-                  string | number, 
+                  string | number,
                   string, 
                   string, 
                   string, 
                   string, 
-                  string];
+                  string,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                  string | number,
+                ];
+
+const headers : ExcelRow = [
+                  "DIRECCION_ip", 
+                  "TIENDA", 
+                  "ENTRADAS", 
+                  "SALIDAS", 
+                  "dia", 
+                  "mes", 
+                  "anio", 
+                  "DIASEM", 
+                  "hora", 
+                  "SEMANA", 
+                  "SOLOHORA", 
+                  "DIA_SEMANA", 
+                  "FECHAHORA",
+                  "Hombres",
+                  "Mujeres",
+                  "0-15 anios",
+                  "15-20 anios",
+                  "20-30 anios",
+                  "30-35 anios",
+                  "35-40 anios",
+                  "40-45 anios",
+                  "45-50 anios",
+                  "50-55 anios",
+                  "55-60 anios",
+                  "60+ anios",
+                  ]
 // fix to use the type
 
-export const getFormatExcelData = (timeLine: any, date: Date): ExcelRow[] => {
+export const getFormatExcelData = (timeLine: EventData[], facesEvents : EventDBRecord[], date: Date): ExcelRow[] => {
   // Set data in format required by Colineal
   //let excelData = [["DIRECCION_ip", "TIENDA", "ENTRADAS", "SALIDAS", "dia", "mes", "anio", "DIASEM", "hora", "SEMANA", "SOLOHORA", "DIA_SEMANA", "FECHAHORA"]]
   const excelData : ExcelRow[]= []
@@ -65,7 +107,37 @@ export const getFormatExcelData = (timeLine: any, date: Date): ExcelRow[] => {
     const countIn = registrosIn.length
     const countOut = registrosOut.length
 
-    const rowData: ExcelRow = ["192.168.71.14", "Colineal", countIn, countOut, day, month, year, dayOfWeek, interval, "", interval.substring(0, 2), stringDay, `${year}-${month}-${day}`]
+    let intervalFaceEvents : EventDBRecord[] = facesEvents.filter((faceEvent) => (new Date(faceEvent.timestamp)).getHours() + utc === Number(interval.slice(0,2)))
+    const faceDataReport : FaceDataReport = processFaceData(intervalFaceEvents);
+    // here
+
+    const rowData: ExcelRow = [
+                              "192.168.71.14", 
+                              "Colineal", 
+                              countIn, 
+                              countOut, 
+                              day, 
+                              month, 
+                              year, 
+                              dayOfWeek, 
+                              interval, 
+                              "", 
+                              interval.substring(0, 2), 
+                              stringDay, 
+                              `${year}-${month}-${day}`,
+                              faceDataReport.countHombres,
+                              faceDataReport.countMujeres,
+                              faceDataReport.ageIntervals[0].count,
+                              faceDataReport.ageIntervals[1].count,
+                              faceDataReport.ageIntervals[2].count,
+                              faceDataReport.ageIntervals[3].count,
+                              faceDataReport.ageIntervals[4].count,
+                              faceDataReport.ageIntervals[5].count,
+                              faceDataReport.ageIntervals[6].count,
+                              faceDataReport.ageIntervals[7].count,
+                              faceDataReport.ageIntervals[8].count,
+                              faceDataReport.ageIntervals[9].count
+                            ]
     excelData.push(rowData)
   }
   return excelData
@@ -84,10 +156,14 @@ export const getAsyncExcelData = async ({initDate, finishDate}: DateRange): Prom
 
   while (dateInf < dateSup) { // colocar <= si se quiere incluir el dìa superior
     const intervalDate = getIntervalDate(dateInf)
-    const { initDate, finishDate } = intervalDate
+    const { initDate, finishDate } = intervalDate    
+    const visitorsData : VisitorsData = await getVisitorsData({ initDate, finishDate })
+
+    const intervalDateForFaces = getIntervalDateCustom(dateInf);
+    const { _initDate, _finishDate } = intervalDateForFaces;
+    const facesEvents : EventDBRecord[] = await queryFacesEventsByDateRange(_initDate, _finishDate)
     
-    const result = await getVisitorsData({ initDate, finishDate })
-    const dayData: ExcelRow[] = getFormatExcelData(result._countTimeLine, dateInf)
+    const dayData: ExcelRow[] = getFormatExcelData(visitorsData._countTimeLine, facesEvents, dateInf)
     excelData = [...excelData, ...dayData]
     dateInf.setHours(24) // to forward to the next day
   }
@@ -95,10 +171,7 @@ export const getAsyncExcelData = async ({initDate, finishDate}: DateRange): Prom
   return excelData
 }
 
-
-
-export const writeCSVFile = async (records: ExcelRow[]): Promise<any> =>{
-  const headers : ExcelRow = ["DIRECCION_ip", "TIENDA", "ENTRADAS", "SALIDAS", "dia", "mes", "anio", "DIASEM", "hora", "SEMANA", "SOLOHORA", "DIA_SEMANA", "FECHAHORA"]
+export const writeCSVFile = async (records: ExcelRow[]): Promise<any> =>{  
   const filePath : String = "./visitorsData.csv"
 
   const csvWriter = createCsvWriter({

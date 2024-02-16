@@ -5,7 +5,7 @@ import { createVisitorsFile } from "./utils/dataProcessing";
 import { sendFile } from "./utils/ftpClient";
 // const db = require('./queries')
 import { getAllEvents, getEventByTimeStamp, getEventsByDateRange,
-  getFacesDayReport, geyFacesDayReportByIntervals, getFacesReportForChart } from './faceQueries';
+  getFacesDayReport, geyFacesDayReportByIntervals, getFacesReportForChart } from './facesMiddleware';
 
 const app : Express = express();
 const port : number = Number(process.env.PORT )|| 3000;
@@ -38,7 +38,7 @@ cron.schedule("00 23 * * *", async () => {
     createVisitorsFile();
     sendFile("./visitorsData.csv", "./public_html/uploads/visitorsData.csv");
   }catch(err){
-    console.error(err);
+    console.error("Error en el archivo de reporte diario");
     console.error(err);
   }
 });

@@ -1,16 +1,11 @@
 import { globalParameters } from "./globalParameters";
 import { dataToStdFormat } from "./dateFunctions";
-import { DateRange, EventData, EventsDto } from "./commonInterfaces";
+import { DateRange, EventData, EventsDto, VisitorsData, VisitorsPerHour } from "./commonInterfaces";
 
 const {axxonOneServer, axxonOnePort, prefix, user,
 password, vEntranceCamera, detectionStartTime } = globalParameters
 
-interface VisitorsData {
-  peopleIn: EventData[]; 
-  peopleOut: EventData[]; 
-  _countTimeLine: EventData[];
-  visitorsTimeLine: VisitorsPerHour[];
-}
+
 
 async function getPeopleIn({ initDate, finishDate }: DateRange): Promise<EventsDto> {
   try {
@@ -77,11 +72,6 @@ function mergeInTimeLine(eventsArray1: EventData[], eventsArray2: EventData[]): 
     eventsTimeLine = [...eventsArray1, ...eventsArray2]
   }
   return eventsTimeLine
-}
-
-interface VisitorsPerHour{
-  hora: string,
-  visitors: number
 }
   
 function getVisitorsTimeLine(eventsTimeline: EventData[]): VisitorsPerHour[] {
